@@ -2,7 +2,6 @@ request = require 'request'
 JSONStream = require 'JSONStream'
 reduce = require 'stream-reduce'
 Q = require 'q'
-_ = require 'lodash'
 
 module.exports = (params) ->
   queryParams = (startAt, maxResults, fields, expand) ->
