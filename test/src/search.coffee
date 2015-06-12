@@ -23,9 +23,8 @@ describe 'search', ->
       onTotal: (total) ->
         total.should.equal 1000
       mapCallback: (issue) ->
-        console.log issue
-        issues.push issue
+        issue.id
     )
-      .then ->
+      .then (issues) ->
         jira.requests.should.have.length 21
-        issues.should.have.length 1000
+        issues.should.deep.equal [1..1000]

@@ -26,8 +26,8 @@ options =
 server = https.createServer options, (request, response) ->
   jira.requests.push request
   query = url.parse(request.url, true).query
-  startAt = query.startAt
-  maxResults = query.maxResults
+  startAt = parseInt query.startAt
+  maxResults = parseInt query.maxResults
   result.expand = query.expand
   result.startAt = startAt
   result.maxResults = maxResults
