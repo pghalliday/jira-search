@@ -4,6 +4,8 @@ reduce = require 'stream-reduce'
 Q = require 'q'
 
 module.exports = (params) ->
+  params.onTotal = params.onTotal || ->
+  params.mapCallback = params.mapCallback || (issue) -> issue
   queryParams = (startAt, maxResults, fields, expand) ->
     method: 'GET'
     strictSSL: params.strictSSL
