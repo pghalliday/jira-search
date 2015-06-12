@@ -1,0 +1,5 @@
+node_modules/
+/coverage.html
+*.log
+*.csv
+/config.json
