@@ -6,7 +6,7 @@
   "scripts": {
     "lint": "coffeelint -f coffeelint.json -x node_modules .",
     "precoverage": "npm run lint",
-    "coverage": "multi='spec=- html-cov=coverage.html mocha-cov-reporter=-' mocha --recursive --compilers coffee:coffee-script/register --require coffee-coverage/register -R mocha-multi",
+    "coverage": "NODE_TLS_REJECT_UNAUTHORIZED=0 multi='spec=- html-cov=coverage.html mocha-cov-reporter=-' mocha --recursive --compilers coffee:coffee-script/register --require coffee-coverage/register -R mocha-multi",
     "prebuild": "npm run coverage",
     "build": "coffee --compile --output lib/ src/",
     "integration": "./integration.sh",
@@ -39,15 +39,14 @@
     "url": "https://github.com/pghalliday/jira-search.git"
   },
   "dependencies": {
-    "JSONStream": "^0.10.0",
     "q": "^1.1.2",
-    "request": "^2.51.0",
-    "stream-reduce": "^1.0.3"
+    "superagent": "^1.2.0"
   },
   "devDependencies": {
-    "chai": "^1.10.0",
-    "coffee-script": "^1.8.0",
+    "chai": "^2.1.2",
+    "chai-as-promised": "^5.1.0",
     "coffee-coverage": "^0.4.4",
+    "coffee-script": "^1.8.0",
     "coffeelint": "^1.8.1",
     "mocha": "^2.1.0",
     "mocha-cov-reporter": "^1.1.3",

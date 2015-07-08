@@ -2,7 +2,9 @@ search = require '../../src/search'
 jira = require '../../mock/jira'
 port = 3000
 chai = require 'chai'
+chaiAsPromised = require 'chai-as-promised'
 chai.should()
+chai.use chaiAsPromised
 
 describe 'search', ->
   before ->
@@ -10,7 +12,6 @@ describe 'search', ->
   after ->
     jira.stop()
   it 'should pass', ->
-    issues = []
     search(
       serverRoot: 'https://localhost:' + port
       strictSSL: false
@@ -28,3 +29,30 @@ describe 'search', ->
       .then (issues) ->
         jira.requests.should.have.length 21
         issues.should.deep.equal [1..1000]
+  it 'should handle errors on request for total', ->
+    jira.rejectNextRequest()
+    search(
+      serverRoot: 'https://localhost:' + port
+      strictSSL: false
+      user: 'myuser'
+      pass: 'mypassword'
+      jql: 'project="myproject"'
+      fields: '*all'
+      expand: 'changelog'
+      maxResults: 50
+    )
+      .should.be.rejected
+  it 'should handle errors on request for issues', ->
+    search(
+      serverRoot: 'https://localhost:' + port
+      strictSSL: false
+      user: 'myuser'
+      pass: 'mypassword'
+      jql: 'project="myproject"'
+      fields: '*all'
+      expand: 'changelog'
+      maxResults: 50
+      onTotal: ->
+        jira.rejectNextRequest()
+    )
+      .should.be.rejected

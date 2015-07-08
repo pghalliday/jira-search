@@ -1,5 +1,5 @@
 jira = require '../../mock/jira'
-request = require 'request'
+request = require 'superagent'
 Q = require 'q'
 port = 3000
 chai = require 'chai'
@@ -11,19 +11,19 @@ describe 'jira', ->
       jira.requests.should.have.length 0
       jira.start(port)
         .then ->
-          Q.nfcall(
-            request,
-            strictSSL: false
-            method: 'Get'
-            uri: 'https://localhost:' + port
+          query = request
+            .get 'https://localhost:' + port
+          Q.ninvoke(
+            query,
+            'end'
           )
         .then ->
           jira.requests.should.have.length 1
-          Q.nfcall(
-            request,
-            strictSSL: false
-            method: 'Get'
-            uri: 'https://localhost:' + port
+          query = request
+            .get 'https://localhost:' + port
+          Q.ninvoke(
+            query,
+            'end'
           )
         .then ->
           jira.requests.should.have.length 2
@@ -34,24 +34,20 @@ describe 'jira', ->
     beforeEach ->
       jira.start port
     afterEach ->
+      console.log 'stop'
       jira.stop()
     it 'should record request params', ->
-      params =
-        strictSSL: false
-        method: 'Get'
-        uri: 'https://localhost:' + port + '/path'
-        auth:
-          user: 'user'
-          pass: 'pass'
-          sendImmediately: true
-        qs:
+      query = request
+        .get('https://localhost:' + port + '/path')
+        .auth('user', 'pass')
+        .query
           jql: 'jql'
           maxResults: 0
           startAt: 0
           fields: 'fields'
           expand: true
-      Q.nfcall(request, params)
-        .spread (response, body) ->
+      Q.ninvoke(query, 'end')
+        .then (response) ->
           response.statusCode.should.eql 200
           req = jira.requests[0]
           req.method.should.equal 'GET'
@@ -63,3 +59,22 @@ describe 'jira', ->
             'base64'
           )
           authBuffer.toString('ascii').should.equal 'user:pass'
+    describe 'rejectNextRequest', ->
+      it 'should cause the next request to be rejected', ->
+        jira.rejectNextRequest()
+        query = request
+          .get 'https://localhost:' + port
+        Q.ninvoke(
+          query,
+          'end'
+        )
+          .should.be.rejected
+          .then ->
+            console.log 'request'
+            query = request
+              .get 'https://localhost:' + port
+            Q.ninvoke(
+              query,
+              'end'
+            )
+          .should.be.fulfilled

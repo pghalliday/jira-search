@@ -1,55 +1,51 @@
-request = require 'request'
-JSONStream = require 'JSONStream'
-reduce = require 'stream-reduce'
+request = require 'superagent'
 Q = require 'q'
 
 module.exports = (params) ->
   params.onTotal = params.onTotal || ->
   params.mapCallback = params.mapCallback || (issue) -> issue
-  queryParams = (startAt, maxResults, fields, expand) ->
-    method: 'GET'
-    strictSSL: params.strictSSL
-    auth:
-      user: params.user
-      pass: params.pass
-      sendImmediately: true
-    uri: params.serverRoot + '/rest/api/2/search'
-    qs:
-      jql: params.jql
-      maxResults: maxResults
-      startAt: startAt
-      fields: fields
-      expand: expand
+  searchRequest = (startAt, maxResults, fields, expand) ->
+    query = request
+      .get(params.serverRoot + '/rest/api/2/search')
+      .query
+        jql: params.jql
+        maxResults: maxResults
+        startAt: startAt
+        fields: fields
+        expand: expand
+    if params.user
+      query.auth params.user, params.pass
+    query
+
   Q()
     .then ->
-      query = request queryParams 0, 0, '', ''
+      query = searchRequest 0, 0, '', ''
       deferred = Q.defer()
-      jsonStream = JSONStream.parse 'total'
-      jsonStream.once 'data', (total) ->
-        deferred.resolve total
-      query.pipe jsonStream
+      query.end (error, response) ->
+        if error
+          deferred.reject error
+        else
+          deferred.resolve response.body.total
       deferred.promise
     .then (total) ->
       params.onTotal total
       remaining = total
       issuesPromise = (start, array) ->
         deferred = Q.defer()
-        jsonStream = JSONStream.parse 'issues.*'
-        reduceStream = reduce(
-          (issues, issue) -> issues.concat params.mapCallback issue
-          []
+        query = searchRequest(
+          start
+          params.maxResults
+          params.fields
+          params.expand
         )
-        reduceStream.once 'data', (issues) ->
-          deferred.resolve array.concat issues
-        query = request(
-          queryParams(
-            start
-            params.maxResults
-            params.fields
-            params.expand
-          )
-        )
-        query.pipe(jsonStream).pipe(reduceStream)
+        query.end (error, response) ->
+          if error
+            deferred.reject error
+          else
+            issues = (
+              params.mapCallback(issue) for issue in response.body.issues
+            )
+            deferred.resolve array.concat issues
         deferred.promise
       issuesPromiseCalls = while remaining > 0
         start = total - remaining

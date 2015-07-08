@@ -12,32 +12,40 @@ result =
   issues: []
 
 jira =
+  _reject: false
   start: (port) ->
     Q.ninvoke server, 'listen', port
   stop: ->
     Q.ninvoke server, 'close'
     jira.requests = []
   requests: []
+  rejectNextRequest: ->
+    jira._reject = true
 
 options =
   key: fs.readFileSync 'test/certs/server.key'
   cert: fs.readFileSync 'test/certs/server.crt'
   passphrase: 'passphrase'
 server = https.createServer options, (request, response) ->
-  jira.requests.push request
-  query = url.parse(request.url, true).query
-  startAt = parseInt query.startAt
-  maxResults = parseInt query.maxResults
-  result.expand = query.expand
-  result.startAt = startAt
-  result.maxResults = maxResults
-  startId = startAt + 1
-  endId = Math.min(startAt + maxResults, total)
-  result.issues = for id in [startId..endId]
-    expand: ''
-    id: id
-    key: 'KEY-' + id
-  response.writeHead 200,
-    'Content-Type': 'application/json'
-  response.end JSON.stringify(result)
+  if jira._reject
+    jira._reject = false
+    response.writeHead 500
+    response.end()
+  else
+    jira.requests.push request
+    query = url.parse(request.url, true).query
+    startAt = parseInt query.startAt
+    maxResults = parseInt query.maxResults
+    result.expand = query.expand
+    result.startAt = startAt
+    result.maxResults = maxResults
+    startId = startAt + 1
+    endId = Math.min(startAt + maxResults, total)
+    result.issues = for id in [startId..endId]
+      expand: ''
+      id: id
+      key: 'KEY-' + id
+    response.writeHead 200,
+      'Content-Type': 'application/json'
+    response.end JSON.stringify(result)
 module.exports = jira
